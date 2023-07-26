@@ -4,7 +4,7 @@ from enum import Enum
 
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func, desc, Row
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import PermissionDenied
@@ -13,8 +13,7 @@ from app.models.db import get_async_session
 
 from app.crud.crud_user import crud_user
 from app.crud.crud_chat import crud_chat, crud_message, crud_user_chats
-from app.models.models import User, Chat, ChatTags, UserRole
-from app.models.models import User, Chat, ChatTags, Tag
+from app.models.models import User, Chat, ChatTags, UserRole, UserChats, Message, Tag
 from app.auth import current_user
 
 from app.shemas import user as user_schemas
@@ -31,33 +30,37 @@ message_router = APIRouter(prefix="/messages", tags=["messages"])
 ##################
 
 
-@chat_router.get("", response_model=list[chat_schemas.Chat])
+@chat_router.get("", response_model=list[chat_schemas.ChatWLastMessage])
 async def user_chats(
         offset: int = 0,
         limit: int = 100,
         user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
-    chats_obj = (await session.scalars(user.chats.statement.offset(offset).limit(limit))).all()
-    return chats_obj
+    chats_obj = (await session.scalars(
+        select(Chat).join(UserChats).filter(UserChats.user_id == user.id, Chat.deleted_at.is_(None)).
+        offset(offset).limit(limit)
+    )).all()
+    chats_res = []
 
+    for chat_obj in chats_obj:
+        last_message = (await session.scalars(
+            select(Message).join(Chat).filter(Message.chat_id == chat_obj.id).order_by(desc(Message.created_at))
+        )).first()
 
-# @chat_router.get("/{chat_id}/inner", response_model=list[chat_schemas.Chat])
-# async def chat_inner(
-#         chat_id: uuid.UUID,
-#         offset: int = 0,
-#         limit: int = 100,
-#         user: User = Depends(current_user),
-#         session: AsyncSession = Depends(get_async_session)
-# ):
-#     chat_inner = (await session.scalars(
-#         select(Chat).where(Chat.parent_id == chat_id or Chat.id == chat_id).offset(offset).limit(limit))).all()
-#
-#     if len(chat_inner) <= 1:  # {"chats": ..., "messages": ...}
-#         return {"chats": None, "messages": (await session.scalars(
-#                 chat_inner[0].messages.statement.offset(offset).limit(limit))).all()}
-#     else:
-#         return {"chats": chat_inner, "messages": None}
+        chats_res.append({"chat": chat_obj, "last_message": last_message})
+
+    return chats_res
+
+    # sub = select(func.max(Message.created_at)).where(Message.chat_id == Chat.id).correlate().scalar_subquery()
+    # chats_obj = (await session.execute(
+    #     select(Chat, Message).join(UserChats).outerjoin(Message, Message.chat_id == Chat.id).
+    #     where(UserChats.user_id == user.id, Message.created_at == sub)
+    # )).all()
+    #
+    # chats_messages = [{"chat": chat_obj, "last_message": message_obj} for chat_obj, message_obj in chats_obj]
+    #
+    # return chats_messages
 
 
 @chat_router.get("/{chat_id}/inner", response_model=list[chat_schemas.Chat])
@@ -281,7 +284,7 @@ async def chat_messages(
     return messages_obj
 
 
-@chat_router.get("/{chat_id}/users", response_model=list[user_schemas.UserRead])
+@chat_router.get("/{chat_id}/users", response_model=list[user_schemas.UserWRole])
 async def chat_users(
         chat_id: uuid.UUID,
         offset: int = 0,
@@ -289,8 +292,11 @@ async def chat_users(
         user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
-    chat_obj = await crud_chat.get(session, model_id=chat_id)
-    users_obj = (await session.scalars(chat_obj.users.statement.offset(offset).limit(limit))).all()
+    users_obj = (await session.execute(
+        select(User, UserChats.role).join(UserChats).
+        filter(UserChats.chat_id == chat_id, UserChats.deleted_at.is_(None)).offset(offset).limit(limit)
+    )).all()
+    users_obj = [{"user": user, "role": role} for user, role in users_obj]
     return users_obj
 
 
@@ -404,7 +410,19 @@ async def delete_chat(
     return deleted_chat_obj
 
 
+
 # 92628958-6e50-45c8-aa5c-603622ac7ed8
+@chat_router.delete("/{chat_id}/user", response_model=None | dict)
+async def delete_chat_users(
+        chat_id: uuid.UUID,
+        user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
+    user_chats_obj = await crud_user_chats.get_by_parameters(session, chat_id=chat_id, user_id=user.id)
+    deleted_user_chats_obj = await crud_user_chats.delete(session, model_id=user_chats_obj.id)
+
+
+
 @chat_router.delete("/{chat_id}/users", response_model=None | dict)
 async def delete_chat_users(
         chat_id: uuid.UUID,
@@ -499,3 +517,19 @@ async def delete_message(
     message_obj = await crud_message.get(session, model_id=message_id)
     deleted_message_obj = await crud_message.remove(session, model_id=message_obj.id)
     return deleted_message_obj
+
+
+
+    # chats_obj = (await session.scalars(
+    #     select(Chat).join(UserChats).filter(UserChats.user_id == user.id, Chat.parent_id.is_(None))
+    # )).all()
+    # chats_res = []
+    #
+    # for chat_obj in chats_obj:
+    #     last_message = (await session.scalars(
+    #         select(Message).join(Chat).filter(Message.chat_id == chat_obj.id).order_by(desc(Message.created_at))
+    #     )).first()
+    #
+    #     chats_res.append({"chat": chat_obj, "last_message": last_message})  # child
+
+    # await session.execute()
