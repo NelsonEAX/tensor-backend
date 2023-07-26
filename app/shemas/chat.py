@@ -120,3 +120,8 @@ class ChatDB(BaseModel):
 
 class Chat(ChatDB):
     pass
+
+
+class ChatWLastMessage(BaseModel):
+    chat: Chat
+    last_message: Message
