@@ -6,6 +6,8 @@ from fastapi_users import schemas
 from pydantic import BaseModel, EmailStr, Field
 from pydantic.validators import strict_str_validator
 
+from app.models.models import UserRole
+
 
 class PhoneNumber(str):
     """Phone Number Pydantic type, using google's phonenumbers"""
@@ -49,4 +51,9 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 class EmailOrPhone(BaseModel):
     email: Union[EmailStr, PhoneNumber]
+
+
+class UserWRole(BaseModel):
+    user: UserRead
+    role: UserRole
 
