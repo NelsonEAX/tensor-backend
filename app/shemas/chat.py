@@ -44,6 +44,7 @@ class MessageDB(BaseModel):
     user_id: uuid.UUID
     chat_id: uuid.UUID
     external: dict | None
+    created_at: datetime
 
     class Config:
         orm_mode = True
@@ -124,4 +125,4 @@ class Chat(ChatDB):
 
 class ChatWLastMessage(BaseModel):
     chat: Chat
-    last_message: Message
+    last_message: Message | None
