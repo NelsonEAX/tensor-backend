@@ -3,7 +3,7 @@ from datetime import timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.models import Chat, Message, MessageType
-from seeds.user_chats import chats
+from seeds.chat_tags import chats
 
 messages = [
     {

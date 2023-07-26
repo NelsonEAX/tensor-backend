@@ -101,6 +101,11 @@ class ChatUpdate(ChatBase):
     pass
 
 
+class ChatUsers(BaseModel):
+    user_id: uuid.UUID
+    role: UserRole
+
+
 class ChatDB(BaseModel):
     id: uuid.UUID
     type: ChatType

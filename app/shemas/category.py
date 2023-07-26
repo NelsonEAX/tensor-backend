@@ -67,6 +67,10 @@ class UserTags(UserTagsDB):
     pass
 
 
+class UserTagsWithCategory(UserTagsDB):
+    category_id: uuid.UUID
+
+
 ####################
 # ChatTags schemas #
 ####################
@@ -96,6 +100,10 @@ class ChatTagsDB(BaseModel):
 
 class ChatTags(ChatTagsDB):
     pass
+
+
+class ChatTagsWithCategory(ChatTagsDB):
+    category_id: uuid.UUID
 
 
 ####################

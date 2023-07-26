@@ -119,7 +119,9 @@ async def helper_update_user_tags(
         session.add(user_tag)
         await session.commit()
 
-    return list((await session.execute(select(UserTags).where(UserTags.user_id == user.id))).scalars())
+    return (await session.execute(select(
+        UserTags.id, UserTags.user_id, UserTags.tag_id, UserTags.title, Tag.category_id
+    ).join(Tag, Tag.id == UserTags.tag_id).where(UserTags.user_id == user.id))).all()
 
 
 async def helper_update_chat_tags(
@@ -152,4 +154,6 @@ async def helper_update_chat_tags(
         session.add(chat_tag)
         await session.commit()
 
-    return list((await session.execute(select(ChatTags).where(ChatTags.chat_id == chat.id))).scalars())
+    return (await session.execute(select(
+        ChatTags.id, ChatTags.chat_id, ChatTags.tag_id, ChatTags.title, Tag.category_id
+    ).join(Tag, Tag.id == ChatTags.tag_id).where(ChatTags.chat_id == chat.id))).all()

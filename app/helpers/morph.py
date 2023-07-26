@@ -1,7 +1,7 @@
-import pymorphy2
+import pymorphy3
 from nltk.tokenize import word_tokenize
 
-morph = pymorphy2.MorphAnalyzer()
+morph = pymorphy3.MorphAnalyzer()
 
 
 def morphing(tag):

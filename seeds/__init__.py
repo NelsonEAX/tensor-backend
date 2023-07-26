@@ -7,10 +7,11 @@ from app.models.models import UserChats, User, Chat, Base, Category
 from seeds.const import password, created_at, today, dt_format, dt_fields, dt_fields2
 from seeds.messages import seed_messages
 from seeds.tags import categories, seed_category_tags
-from seeds.user_chats import users, chats, user_chats, get_fake_user_item
+from seeds.user_chats import users, get_fake_user_item
+from seeds.chat_tags import chats, user_chats, get_fake_chat_item
 from sqlalchemy import select
 
-from seeds.user_tags import seed_users_tags
+from seeds.user_tags import seed_chat_tags, seed_user_tags
 
 
 async def seed_list(session: AsyncSession, model: Type[Base], items: list | Generator):
@@ -36,9 +37,8 @@ async def seed(session: AsyncSession):
     :param session:
     :return:
     """
-
     await seed_list(session, User, get_fake_user_item())
-    await seed_list(session, Chat, chats)
+    await seed_list(session, Chat, get_fake_chat_item())
 
     for item in user_chats:
         db_item = (await session.execute(select(UserChats)
@@ -56,4 +56,6 @@ async def seed(session: AsyncSession):
     await seed_list(session, Category, categories)
     await seed_category_tags(session)
 
-    await seed_users_tags(session)
+    # # Вставка тегов очень длительная операция! С осторожностью
+    # await seed_user_tags(session)
+    # await seed_chat_tags(session)

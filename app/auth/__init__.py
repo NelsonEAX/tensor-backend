@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import app_settings
 from app.helpers.tags import helper_update_user_tags
 from app.models.db import User, get_async_session
-from app.models.models import UserTags
+from app.models.models import UserTags, Tag
 from app.shemas.user import UserRead, UserCreate, EmailOrPhone, UserUpdate
 from app.auth.manager import get_user_manager
 from app.crud.crud_user import crud_user
@@ -53,19 +53,20 @@ async def post_user(
     return updated_user
 
 
-@additional_users_router.get("/tags", response_model=list[search_schemas.UserTags])
+@additional_users_router.get("/tags", response_model=list[search_schemas.UserTagsWithCategory])
 async def user_tags(
         offset: int = 0,
         limit: int = 100,
         user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
-    tags_obj = (await session.scalars(
-        select(UserTags).where(UserTags.user_id == user.id).offset(offset).limit(limit))).all()
+    tags_obj = (await session.execute(select(
+        UserTags.id, UserTags.user_id, UserTags.tag_id, UserTags.title, Tag.category_id
+    ).join(Tag, Tag.id == UserTags.tag_id).where(UserTags.user_id == user.id).offset(offset).limit(limit))).all()
     return tags_obj
 
 
-@additional_users_router.post("/tags", response_model=list[search_schemas.UserTags])
+@additional_users_router.post("/tags", response_model=list[search_schemas.UserTagsWithCategory])
 async def update_user_tags(
         tags: list[str],  # list[search_schemas.TagCreate],
         user: User = Depends(current_user),
