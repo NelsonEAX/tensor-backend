@@ -80,7 +80,7 @@ async def get_recomended_users(
 
     # получаем теги текущего пользователя
     user_tags = (await db.scalars(user.tags.statement)).all()
-    # print(user_tags)
+
     length_cur_user_tags = len(user_tags)
     set_cur_user_tags_ids_to_compare = set(tag.id for tag in user_tags)
 
@@ -112,8 +112,25 @@ async def get_recomended_users(
     result_list = [await crud_user.get(db=db, model_id=i[0]) for i in new_recomended_users]
     return result_list
 
+@chat_router.get("/recomended/events", response_model=None)
+async def get_recomended_events(
+        # user:list,
+        # events:list[dict],
+        offset: int = 0,
+        limit: int = 1000,
+        user: User = Depends(current_user), db: AsyncSession = Depends(get_async_session)): #-> list[Chat]:
+    new_recomended_events = []
 
+    # получаем теги текущего пользователя
+    user_tags = (await db.scalars(user.tags.statement)).all()
+    # print(user_tags)
+    # length_cur_user_tags = len(user_tags)
+    set_cur_user_tags_ids_to_compare = set(tag.id for tag in user_tags)
 
+    all_events_tags_dict = {}
+    all_events = await crud_chat.get_chats_by_type(db=db, chat_type="event")
+    print(all_events)
+    return all_events
 
 
 # временный метод для обновления тегов пользователей

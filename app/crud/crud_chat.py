@@ -40,7 +40,11 @@ class CRUDUserChats(CRUDBase[UserChats, UserChatsCreate, UserChatsUpdate]):
 
 
 class CRUDChat(CRUDBase[Chat, ChatCreate, ChatUpdate]):
-    pass
+    async def get_chats_by_type(self, db: AsyncSession, chat_type: str, offset: int = 0, limit: int = 0) -> list[Chat]:
+        q = select(self.model).where(self.model.type == chat_type) #.offset(offset).limit(limit)
+        result = await db.execute(q)
+        curr = list(result.scalars())
+        return curr
 
 
 crud_message = CRUDMessage(Message)
