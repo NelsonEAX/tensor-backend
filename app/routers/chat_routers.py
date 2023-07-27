@@ -1,10 +1,11 @@
 import dataclasses
 import uuid
+import re
 from enum import Enum
 
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select, or_, func, desc, Row
+from sqlalchemy import select, or_, func, desc, Row, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -31,27 +32,45 @@ message_router = APIRouter(prefix="/messages", tags=["messages"])
 ##################
 
 
-@chat_router.get("", response_model=list[chat_schemas.ChatWLastMessage])
+@chat_router.get("", response_model=list[chat_schemas.UserChatsWMAC])
 async def user_chats(
         offset: int = 0,
         limit: int = 100,
         user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
-    chats_obj = (await session.scalars(
-        select(Chat).join(UserChats).filter(UserChats.user_id == user.id, Chat.deleted_at.is_(None)).
-        offset(offset).limit(limit)
-    )).all()
-    chats_res = []
+    r = r"USER_CHAT_ID_reg"
 
-    for chat_obj in chats_obj:
-        last_message = (await session.scalars(
-            select(Message).join(Chat).filter(Message.chat_id == chat_obj.id).order_by(desc(Message.created_at))
-        )).first()
+    with open("C:\\Users\\mrkim\\PycharmProjects\\tensor-backend\\app\\users_chat_list.sql", "r") as sql_file:
+        sql_text = text(re.sub(r, "'" + str(user.id) + "'", sql_file.read()))
 
-        chats_res.append({"chat": chat_obj, "last_message": last_message})
+    chats_obj = (await session.execute(sql_text)).all()
 
-    return chats_res
+    chats_obj = [{"chat": {"id": id,
+                  "parent_id": parent_id,
+                  "type": type,
+                  "external": external},
+                  "date": date,
+                  "message": message if message["id"] is not None else None,
+                  "children": children}
+                 for id, parent_id, type, external, date, message, children in chats_obj]
+
+    print(chats_obj)
+
+    # chats_obj = (await session.scalars(
+    #     select(Chat).join(UserChats).filter(UserChats.user_id == user.id, Chat.deleted_at.is_(None)).
+    #     offset(offset).limit(limit)
+    # )).all()
+    # chats_res = []
+    #
+    # for chat_obj in chats_obj:
+    #     last_message = (await session.scalars(
+    #         select(Message).join(Chat).filter(Message.chat_id == chat_obj.id).order_by(desc(Message.created_at))
+    #     )).first()
+    #
+    #     chats_res.append({"chat": chat_obj, "last_message": last_message})
+
+    return chats_obj
 
     # sub = select(func.max(Message.created_at)).where(Message.chat_id == Chat.id).correlate().scalar_subquery()
     # chats_obj = (await session.execute(
