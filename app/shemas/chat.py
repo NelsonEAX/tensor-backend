@@ -131,7 +131,7 @@ class ChatWLastMessage(BaseModel):
 class UserChatsWMAC(BaseModel):
     chat: Chat
     date: datetime
-    message: dict | None
+    last_message: dict | None
     children: list[Chat] | None
 
 
