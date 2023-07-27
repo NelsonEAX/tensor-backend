@@ -51,7 +51,7 @@ async def user_chats(
                   "type": type,
                   "external": external},
                   "date": date,
-                  "last_message": message if message["id"] is not None else None,
+                  "last_message": message,
                   "children": children,
                   "user": user}
                  for id, parent_id, type, external, date, message, children, user in chats_obj]
