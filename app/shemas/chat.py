@@ -8,6 +8,8 @@ from app.shemas.category import Tag
 from enum import Enum
 
 from app.models.models import MessageType
+from app.shemas.user import UserRead
+
 
 class ChatType(str, Enum):
     private: str = "private"
@@ -133,5 +135,4 @@ class UserChatsWMAC(BaseModel):
     date: datetime
     last_message: dict | None
     children: list[Chat] | None
-
-
+    user: UserRead | None

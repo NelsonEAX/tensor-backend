@@ -52,8 +52,9 @@ async def user_chats(
                   "external": external},
                   "date": date,
                   "last_message": message if message["id"] is not None else None,
-                  "children": children}
-                 for id, parent_id, type, external, date, message, children in chats_obj]
+                  "children": children,
+                  "user": user}
+                 for id, parent_id, type, external, date, message, children, user in chats_obj]
 
     print(chats_obj)
 
@@ -380,7 +381,6 @@ async def create_chat(
     return chat_obj
 
 
-@chat_router.post("/{chat_id}/tags", response_model=list[search_schemas.ChatTags] | dict)
 @chat_router.post("/{chat_id}/tags", response_model=list[search_schemas.ChatTagsWithCategory])
 async def update_chat_tags(
         tags: list[str],  # list[search_schemas.TagCreate],

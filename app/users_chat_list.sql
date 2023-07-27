@@ -8,6 +8,22 @@ with all_chats as (
 	where user_chats.user_id = USER_CHAT_ID_reg::UUID
 	and chats.deleted_at is null
 ),
+private_user as (
+	select
+		all_chats.id as chat_id,
+		json_build_object(
+			'id', users.id,
+			'email', users.email,
+			'external', users.external,
+			'is_active', users.is_active,
+			'is_superuser', users.is_superuser,
+			'is_verified', users.is_verified
+		) as user
+	from all_chats
+	inner join user_chats on user_chats.chat_id = all_chats.id
+	inner join users on users.id = user_chats.user_id
+	where all_chats.type = 'private' and user_chats.user_id != USER_CHAT_ID_reg::UUID
+),
 all_msg as (
 -- Получаем ВСЕ сообщения в этих чатах,
 -- добаляем row_number в рамках каждого чата, отсортированный в обратном порядке по дате сообщения
@@ -77,15 +93,18 @@ top_chats as (
 			))
 			from inner_chats
 			where inner_chats.parent_id = all_chats_msg.id
-		)	as children
+		)	as children,
+		private_user.user
 	from all_chats_msg
+	left join private_user on private_user.chat_id = all_chats_msg.id
 	where parent_id is null
 	and (all_chats_msg.type <> 'private' or (all_chats_msg.type = 'private' and all_chats_msg.message is not null))
 	union all
 -- Обьединяем с вложденными чатами, но чьи родители не попали в выборку
 	select
 		all_chats_msg.*,
-		null as children
+		null as children,
+		null as user
 	from all_chats_msg
 	left join inner_chats on inner_chats.id = all_chats_msg.id
 	where all_chats_msg.parent_id is not null 
