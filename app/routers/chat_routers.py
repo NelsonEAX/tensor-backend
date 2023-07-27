@@ -103,6 +103,7 @@ def get_rec_objects_list(some_dict: dict, object_name: str, cur_user_tags_ids_se
             max_tag_count = len(tags_ids_set)
         intersections = len(cur_user_tags_ids_set.intersection(tags_ids_set))
         percent = intersections / max_tag_count
+        percent = round(percent*100)
         recs_list.append(
             RecomendedObj(
                 obj_name=object_name,
@@ -202,10 +203,14 @@ async def get_recomendations(
     for obj in union_list:
         if obj.obj_name == "user":
             us = await crud_user.get(db=db, model_id=obj.obj_id)
-            result_list.append(us)
+            json_view = jsonable_encoder(us)
+            json_view['external']['percent'] = obj.percent
+            result_list.append(json_view)
         if obj.obj_name == "group":
             us = await crud_chat.get(db=db, model_id=obj.obj_id)
-            result_list.append(us)
+            json_view = jsonable_encoder(us)
+            json_view['external']['percent'] = obj.percent
+            result_list.append(json_view)
     return result_list
 
 
@@ -413,7 +418,7 @@ async def delete_chat(
 
 # 92628958-6e50-45c8-aa5c-603622ac7ed8
 @chat_router.delete("/{chat_id}/user", response_model=None | dict)
-async def delete_chat_users(
+async def delete_chat_user(
         chat_id: uuid.UUID,
         user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
