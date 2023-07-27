@@ -406,10 +406,10 @@ async def update_chat(
         user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
-    user_chats_obj = await crud_user_chats.get_by_parameters(session, chat_id=chat_id, user_id=user.id)
-
-    if not user_chats_obj or user_chats_obj.role not in (UserRole.admin.value, UserRole.moderator.value):
-        raise PermissionDenied()
+    # user_chats_obj = await crud_user_chats.get_by_parameters(session, chat_id=chat_id, user_id=user.id)
+    #
+    # if not user_chats_obj or user_chats_obj.role not in (UserRole.admin.value, UserRole.moderator.value):
+    #     raise PermissionDenied()
 
     chat_obj = await crud_chat.get(session, model_id=chat_id)
     updated_chat_obj = await crud_chat.update(session, db_obj=chat_obj, obj_in=chat)
@@ -535,14 +535,14 @@ async def delete_chat_users(
 #     return message_obj.chat
 #
 #
-@message_router.post("", response_model=chat_schemas.Message)
-async def create_message(
-        message: chat_schemas.MessageCreate,
-        user: User = Depends(current_user),
-        session: AsyncSession = Depends(get_async_session)
-):
-    message_obj = await crud_message.create_user(session, user_id=user.id, obj_in=message)
-    return message_obj
+# @message_router.post("", response_model=chat_schemas.Message)
+# async def create_message(
+#         message: chat_schemas.MessageCreate,
+#         user: User = Depends(current_user),
+#         session: AsyncSession = Depends(get_async_session)
+# ):
+#     message_obj = await crud_message.create_user(session, user_id=user.id, obj_in=message)
+#     return message_obj
 #
 #
 # @message_router.put("", response_model=chat_schemas.Message)
