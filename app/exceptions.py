@@ -14,3 +14,8 @@ class DetailedHTTPException(HTTPException):
 class PermissionDenied(DetailedHTTPException):
     STATUS_CODE = status.HTTP_403_FORBIDDEN
     DETAIL = "Permission denied"
+
+
+class WrongNumberOfUsers(DetailedHTTPException):
+    STATUS_CODE = status.HTTP_422_UNPROCESSABLE_ENTITY
+    DETAIL = "Wrong number of users"

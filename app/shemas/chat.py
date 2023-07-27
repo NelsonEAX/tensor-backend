@@ -126,3 +126,12 @@ class Chat(ChatDB):
 class ChatWLastMessage(BaseModel):
     chat: Chat
     last_message: Message | None
+
+
+class UserChatsWMAC(BaseModel):
+    chat: Chat
+    date: datetime
+    last_message: dict | None
+    children: list[Chat] | None
+
+
