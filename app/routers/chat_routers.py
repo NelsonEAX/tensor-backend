@@ -6,14 +6,15 @@ from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, or_, func, desc, Row
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
-from app.exceptions import PermissionDenied
+from app.exceptions import PermissionDenied, WrongNumberOfUsers
 from app.helpers.tags import helper_update_chat_tags, helper_update_user_tags
 from app.models.db import get_async_session
 
 from app.crud.crud_user import crud_user
 from app.crud.crud_chat import crud_chat, crud_message, crud_user_chats
-from app.models.models import User, Chat, ChatTags, UserRole, UserChats, Message, Tag
+from app.models.models import User, Chat, ChatTags, UserRole, UserChats, Message, Tag, ChatType
 from app.auth import current_user
 
 from app.shemas import user as user_schemas
@@ -328,6 +329,30 @@ async def create_chat(
         session: AsyncSession = Depends(get_async_session)
 ):
     chat_obj = await crud_chat.create(session, obj_in=chat)
+
+    if chat.type == ChatType.private.value:
+        if len(users_id) != 2:
+            raise WrongNumberOfUsers()
+
+        alias1 = aliased(UserChats)
+        alias2 = aliased(UserChats)
+
+        chat = (await session.execute(
+            select(Chat).join(alias1, Chat.id == alias1.chat_id).where(alias1.user_id == users_id[0]).
+            join(alias2, Chat.id == alias2.chat_id).where(alias2.user_id == users_id[1])
+        )).first()
+
+        print(chat)
+
+        if chat:
+            return chat[0]
+        else:
+            for user_id in users_id:
+                user_chats_obj = chat_schemas.UserChatsCreate(user_id=user_id, chat_id=chat_obj.id,
+                                                              role=UserRole.admin.value)
+                await crud_user_chats.create(session, obj_in=user_chats_obj)
+
+            return chat_obj
 
     for user_id in users_id:
         user_chats_obj = chat_schemas.UserChatsCreate(user_id=user_id, chat_id=chat_obj.id, role=UserRole.admin.value)
