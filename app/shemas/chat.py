@@ -135,4 +135,4 @@ class UserChatsWMAC(BaseModel):
     date: datetime
     last_message: dict | None
     children: list[Chat] | None
-    user: UserRead
+    user: UserRead | None
