@@ -7,6 +7,7 @@ with all_chats as (
 	inner join user_chats on user_chats.chat_id = chats.id
 	where user_chats.user_id = USER_CHAT_ID_reg::UUID
 	and chats.deleted_at is null
+	and user_chats.deleted_at is null
 ),
 private_user as (
 	select
