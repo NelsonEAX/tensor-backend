@@ -535,14 +535,14 @@ async def delete_chat_users(
 #     return message_obj.chat
 #
 #
-# @message_router.post("", response_model=chat_schemas.Message)
-# async def create_message(
-#         message: chat_schemas.MessageCreate,
-#         user: User = Depends(current_user),
-#         session: AsyncSession = Depends(get_async_session)
-# ):
-#     message_obj = await crud_message.create_user(session, user_id=user.id, obj_in=message)
-#     return message_obj
+@message_router.post("", response_model=chat_schemas.Message)
+async def create_message(
+        message: chat_schemas.MessageCreate,
+        user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
+    message_obj = await crud_message.create_user(session, user_id=user.id, obj_in=message)
+    return message_obj
 #
 #
 # @message_router.put("", response_model=chat_schemas.Message)

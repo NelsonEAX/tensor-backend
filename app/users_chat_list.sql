@@ -16,6 +16,7 @@ all_msg as (
 		all_chats.id as chat_id,
 		all_chats.chat_dt,
 		messages.created_at as msg_dt,
+		messages.id as messages_id,
 		json_build_object(
 			'id', messages.id,
 			'parent_id', messages.parent_id,
@@ -27,14 +28,18 @@ all_msg as (
 		) as msg,
 		row_number() over (PARTITION by messages.chat_id order by messages.created_at desc) as rn
 	from all_chats
-	left join messages on messages.chat_id = all_chats.id 
+	left join messages on messages.chat_id = all_chats.id
 	where messages.deleted_at is null
 ),
 last_msg as (
 -- отфильтровываем только последние сообщения
 -- либо вообще без сообщений
 	select
-		all_msg.*,
+		all_msg.chat_id,
+		case
+			when all_msg.messages_id is null then null
+			else all_msg.msg
+		end as msg,
 		coalesce(msg_dt, chat_dt) as dt
 	from all_msg
 	where all_msg.rn = 1 or msg_dt is null
@@ -52,7 +57,7 @@ all_chats_msg as (
 	inner join last_msg on last_msg.chat_id = all_chats.id
 ),
 inner_chats as (
--- Получаем список вложенных чатов, чьи родители так же попали в выборку 
+-- Получаем список вложенных чатов, чьи родители так же попали в выборку
 	select child.*
 	from all_chats_msg as parent
 	inner join all_chats_msg as child on child.parent_id = parent.id
@@ -75,6 +80,7 @@ top_chats as (
 		)	as children
 	from all_chats_msg
 	where parent_id is null
+	and (all_chats_msg.type <> 'private' or (all_chats_msg.type = 'private' and all_chats_msg.message is not null))
 	union all
 -- Обьединяем с вложденными чатами, но чьи родители не попали в выборку
 	select
