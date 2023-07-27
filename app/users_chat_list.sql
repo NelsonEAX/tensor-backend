@@ -109,6 +109,11 @@ top_chats as (
 	left join inner_chats on inner_chats.id = all_chats_msg.id
 	where all_chats_msg.parent_id is not null 
 	and inner_chats.id is null
+),
+ordered as (
+	select *
+	from top_chats
+	order by date DESC
 )
 select *
-from top_chats
+from ordered

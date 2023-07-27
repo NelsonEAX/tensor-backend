@@ -41,7 +41,7 @@ async def user_chats(
 ):
     r = r"USER_CHAT_ID_reg"
 
-    with open("C:\\Users\\mrkim\\PycharmProjects\\tensor-backend\\app\\users_chat_list.sql", "r") as sql_file:
+    with open("users_chat_list.sql", "r") as sql_file:
         sql_text = text(re.sub(r, "'" + str(user.id) + "'", sql_file.read()))
 
     chats_obj = (await session.execute(sql_text)).all()
@@ -51,7 +51,7 @@ async def user_chats(
                   "type": type,
                   "external": external},
                   "date": date,
-                  "last_message": message if message["id"] is not None else None,
+                  "last_message": message,
                   "children": children,
                   "user": user}
                  for id, parent_id, type, external, date, message, children, user in chats_obj]
